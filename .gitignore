@@ -1,3 +1,5 @@
 venv
 .idea
 movies_admin/config/.env
+__pycache__/
+*.py[cod]
