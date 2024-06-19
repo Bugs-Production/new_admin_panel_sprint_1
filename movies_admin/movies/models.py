@@ -6,8 +6,8 @@ from django.utils.translation import gettext_lazy as _
 
 
 class TimeStampedMixin(models.Model):
-    created = models.DateTimeField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True, blank=True, null=True)
 
     class Meta:
         abstract = True
@@ -22,7 +22,7 @@ class UUIDMixin(models.Model):
 
 class Genre(UUIDMixin, TimeStampedMixin):
     name = models.CharField(verbose_name=_("Name"), max_length=64)
-    description = models.TextField(verbose_name=_("Description"), blank=True)
+    description = models.TextField(verbose_name=_("Description"), blank=True, null=True)
 
     class Meta:
         db_table = 'content"."genre'
@@ -52,11 +52,14 @@ class TypeChoices(models.TextChoices):
 
 class FilmWork(UUIDMixin, TimeStampedMixin):
     title = models.TextField(verbose_name=_("Title"))
-    description = models.TextField(verbose_name=_("Description"), blank=True)
-    creation_date = models.DateField(verbose_name=_("Creation Date"))
+    description = models.TextField(verbose_name=_("Description"), blank=True, null=True)
+    creation_date = models.DateField(
+        verbose_name=_("Creation Date"), blank=True, null=True
+    )
     rating = models.FloatField(
         verbose_name=_("Rating"),
         blank=True,
+        null=True,
         validators=[MinValueValidator(0), MaxValueValidator(100)],
     )
     type = models.CharField(
@@ -66,7 +69,7 @@ class FilmWork(UUIDMixin, TimeStampedMixin):
         default=TypeChoices.MOVIE,
     )
     certificate = models.CharField(
-        verbose_name=_("Certificate"), max_length=512, blank=True
+        verbose_name=_("Certificate"), max_length=512, blank=True, null=True
     )
     file_path = models.FileField(
         verbose_name=_("File"), blank=True, null=True, upload_to="movies/"
@@ -83,10 +86,9 @@ class FilmWork(UUIDMixin, TimeStampedMixin):
         return self.title
 
 
-class GenreFilmWork(UUIDMixin):
+class GenreFilmWork(UUIDMixin, TimeStampedMixin):
     genre = models.ForeignKey("Genre", on_delete=models.CASCADE)
     film_work = models.ForeignKey("FilmWork", on_delete=models.CASCADE)
-    created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'content"."genre_film_work'
@@ -97,11 +99,10 @@ class GenreFilmWork(UUIDMixin):
         return f"Жанр - {self.genre}, кино - {self.film_work}"
 
 
-class PersonFilmWork(UUIDMixin):
+class PersonFilmWork(UUIDMixin, TimeStampedMixin):
     person = models.ForeignKey("Person", on_delete=models.CASCADE)
     film_work = models.ForeignKey("FilmWork", on_delete=models.CASCADE)
     role = models.TextField(verbose_name=_("Role"))
-    created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'content"."person_film_work'
