@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 
 
 class TimeStampedMixin(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, blank=True, null=True)
 
     class Meta:
@@ -94,6 +94,11 @@ class GenreFilmWork(UUIDMixin, TimeStampedMixin):
         db_table = 'content"."genre_film_work'
         verbose_name = _("Genre and film")
         verbose_name_plural = _("Genres and films")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["genre", "film_work"], name="unique_genre_film_work"
+            )
+        ]
 
     def __str__(self):
         return f"Жанр - {self.genre}, кино - {self.film_work}"
@@ -108,6 +113,11 @@ class PersonFilmWork(UUIDMixin, TimeStampedMixin):
         db_table = 'content"."person_film_work'
         verbose_name = _("Actor and film work")
         verbose_name_plural = _("Actors and film works")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["person", "film_work", "role"], name="unique_person_film_work"
+            )
+        ]
 
     def __str__(self):
         return f"Актер - {self.person}, кино - {self.film_work}"
