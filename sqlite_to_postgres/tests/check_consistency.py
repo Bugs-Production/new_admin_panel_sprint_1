@@ -3,8 +3,9 @@ import sqlite3
 
 import psycopg
 import pytest
-
-from sqlite_to_postgres.read_sqlite import SQLiteLoader
+from sqlite_to_postgres.read_sqlite import (FilmWork, Genre, GenreFilmWork,
+                                            Person, PersonFilmWork,
+                                            SQLiteLoader)
 
 dsl = {
     "dbname": "movies_database",
@@ -17,18 +18,25 @@ dsl = {
 
 def test_count_values_for_sqlite_and_postgres():
     """Проверяем совпадает ли кол-во записей в базах данных."""
-    with sqlite3.connect("sqlite_to_postgres/db.sqlite") as sql_connect:
+    with sqlite3.connect("../db.sqlite") as sql_connect:
         sqlite_loader = SQLiteLoader(sql_connect)
 
     # получаем кол-во элементов в каждой таблице SQLite
-    genres_count_sqlite = sum(len(item) for item in sqlite_loader.load_genres())
-    movies_count_sqlite = sum(len(item) for item in sqlite_loader.load_movies())
-    persons_count_sqlite = sum(len(item) for item in sqlite_loader.load_persons())
+    genres_count_sqlite = sum(
+        len(item) for item in sqlite_loader.load_data("genre", Genre)
+    )
+    movies_count_sqlite = sum(
+        len(item) for item in sqlite_loader.load_data("film_work", FilmWork)
+    )
+    persons_count_sqlite = sum(
+        len(item) for item in sqlite_loader.load_data("person", Person)
+    )
     genre_and_film_work_count_sqlite = sum(
-        len(item) for item in sqlite_loader.load_genre_film_work()
+        len(item) for item in sqlite_loader.load_data("genre_film_work", GenreFilmWork)
     )
     person_and_film_work_count_sqlite = sum(
-        len(item) for item in sqlite_loader.load_person_film_work()
+        len(item)
+        for item in sqlite_loader.load_data("person_film_work", PersonFilmWork)
     )
 
     # получаем кол-во элементов в каждой таблице PostgreSQL
@@ -59,7 +67,7 @@ def test_count_values_for_sqlite_and_postgres():
 
 def test_data_consistency_between_sqlite_and_postgresql():
     """Проверка соответствия данных между SQLite и PostgreSQL."""
-    with sqlite3.connect("sqlite_to_postgres/db.sqlite") as sql_connect:
+    with sqlite3.connect("../db.sqlite") as sql_connect:
         sqlite_loader = SQLiteLoader(sql_connect)
 
     # получаем данные из PostgreSQL
@@ -78,11 +86,15 @@ def test_data_consistency_between_sqlite_and_postgresql():
         person_film_work_postgresql = cur.fetchall()
 
     # получаем данные из sqlite для проверки
-    genres_sqlite = sqlite_loader.load_genres()
-    movies_sqlite = sqlite_loader.load_movies()
-    persons_sqlite = sqlite_loader.load_persons()
-    genre_and_film_work_sqlite = sqlite_loader.load_genre_film_work()
-    person_and_film_work_sqlite = sqlite_loader.load_person_film_work()
+    genres_sqlite = sqlite_loader.load_data("genre", Genre)
+    movies_sqlite = sqlite_loader.load_data("film_work", FilmWork)
+    persons_sqlite = sqlite_loader.load_data("person", Person)
+    genre_and_film_work_sqlite = sqlite_loader.load_data(
+        "genre_film_work", GenreFilmWork
+    )
+    person_and_film_work_sqlite = sqlite_loader.load_data(
+        "person_film_work", PersonFilmWork
+    )
 
     # делаем единый список для каждой таблицы, с элементами словарей
     genres_sqlite_extend = [item for genre in genres_sqlite for item in genre]
