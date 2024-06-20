@@ -1,8 +1,8 @@
 import sqlite3
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Union
 
 
 @dataclass
@@ -32,7 +32,6 @@ class Person:
 class GenreFilmWork:
     film_work_id: uuid.UUID
     genre_id: uuid.UUID
-    created: datetime
     id: uuid.UUID = field(default_factory=uuid.uuid4)
 
 
@@ -49,55 +48,19 @@ class SQLiteLoader:
         self.connection = connection
         self.connection.row_factory = sqlite3.Row
 
-    def load_movies(self, batch_size: int = 10) -> List[FilmWork]:
-        """Загружаем данные из таблицы фильмов."""
-        with self.connection:
-            cursor = self.connection.cursor()
-            cursor.execute("SELECT * FROM film_work")
-            while True:
-                data = cursor.fetchmany(batch_size)
-                if not data:
-                    break
-                yield [dict(row) for row in data]
+    def load_data(self, table_name: str, schema: Optional[Union[FilmWork, Genre, Person, GenreFilmWork, PersonFilmWork]], batch_size: int = 10) -> List:
+        """Загружаем данные из таблиц SQLite."""
+        with self.connection as connect:
+            cursor = connect.cursor()  # по поводу менеджера для sqlite не поддерживается
 
-    def load_genres(self, batch_size: int = 10) -> List[Genre]:
-        """Загружаем данные из таблицы жанров."""
-        with self.connection:
-            cursor = self.connection.cursor()
-            cursor.execute("SELECT * FROM genre")
-            while True:
-                data = cursor.fetchmany(batch_size)
-                if not data:
-                    break
-                yield [dict(row) for row in data]
+            # Формируем строку полей для запроса SELECT
+            if schema is not None:
+                fields_from_sql = ", ".join(f.name for f in fields(schema))
+                query = f"SELECT {fields_from_sql} FROM {table_name}"
+            else:
+                query = f"SELECT * FROM {table_name}"
 
-    def load_persons(self, batch_size: int = 10) -> List[Person]:
-        """Загружаем данные из таблицы персон."""
-        with self.connection:
-            cursor = self.connection.cursor()
-            cursor.execute("SELECT * FROM person")
-            while True:
-                data = cursor.fetchmany(batch_size)
-                if not data:
-                    break
-                yield [dict(row) for row in data]
-
-    def load_genre_film_work(self, batch_size: int = 10) -> List[GenreFilmWork]:
-        """Загружаем данные из таблицы жанры и фильмы."""
-        with self.connection:
-            cursor = self.connection.cursor()
-            cursor.execute("SELECT * FROM genre_film_work")
-            while True:
-                data = cursor.fetchmany(batch_size)
-                if not data:
-                    break
-                yield [dict(row) for row in data]
-
-    def load_person_film_work(self, batch_size: int = 10) -> List[PersonFilmWork]:
-        """Загружаем данные из таблицы актеры и фильмы."""
-        with self.connection:
-            cursor = self.connection.cursor()
-            cursor.execute("SELECT * FROM person_film_work")
+            cursor.execute(query)
             while True:
                 data = cursor.fetchmany(batch_size)
                 if not data:
